@@ -1,11 +1,13 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from starlette.requests import Request
+
 
 class PatientRq(BaseModel):
     name: str
     surename: str
+
 
 class PatientResp(BaseModel):
     id: int
@@ -15,9 +17,11 @@ class PatientResp(BaseModel):
 app = FastAPI()
 patients = dict()
 
+
 @app.get("/")
 def root():
     return {"message": "Hello World during the coronavirus pandemic!"}
+
 
 @app.get("/method")
 @app.post("/method")
@@ -27,8 +31,16 @@ def method(request: Request):
     return {"method": request.method}
 
 
-@app.post("/patient")
+@app.post("/patient", response_model=PatientResp)
 def add_patient(patientRq: PatientRq):
-    d = {len(patients) : patientRq.dict()}
+    d = {len(patients): patientRq.dict()}
     patients.update(d)
-    return PatientResp(id=len(patients)-1,patient=patientRq.dict())
+    return PatientResp(id=len(patients) - 1, patient=patientRq.dict())
+
+
+@app.get("/patient/{pk}")
+async def get_patient(pk: int):
+    if len(patients) - 1 >= pk:
+        return patients.get(pk)
+    else:
+        raise HTTPException(status_code=404)
