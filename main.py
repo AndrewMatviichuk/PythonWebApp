@@ -5,7 +5,7 @@ from starlette.requests import Request
 
 class PatientRq(BaseModel):
     name: str
-    surname: str
+    surename: str
 
 class PatientResp(BaseModel):
     id: int
