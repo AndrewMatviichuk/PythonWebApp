@@ -12,7 +12,7 @@ class PatientResp(BaseModel):
 
 
 app = FastAPI()
-patient_counter = 0
+patients = dict()
 
 @app.get("/")
 def root():
@@ -28,6 +28,7 @@ def method(request: Request):
 
 @app.post("/patient", response_model=PatientResp)
 def add_patient(patientRq: PatientRq):
-	patient_counter += 1
-	return PatientResp(id=patient_counter, patient=patientRq.dict())
+	d = {len(patients)-1 : patientRq.dict()}
+	patients.update(d)
+	return PatientResp(id=len(patients)-1, patient=patientRq.dict())
 
