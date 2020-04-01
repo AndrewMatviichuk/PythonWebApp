@@ -1,14 +1,15 @@
+import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
 from starlette.requests import Request
 
 class PatientRq(BaseModel):
-	name: str
-	surname: str
+    name: str
+    surname: str
 
 class PatientResp(BaseModel):
-	id: int
-	patient: dict
+    id: int
+    patient: dict
 
 
 app = FastAPI()
@@ -23,12 +24,11 @@ def root():
 @app.put("/method")
 @app.delete("/method")
 def method(request: Request):
-	return {"method": request.method}
+    return {"method": request.method}
 
 
 @app.post("/patient")
 def add_patient(patientRq: PatientRq):
-	d = {len(patients) : patientRq.dict()}
-	patients.update(d)
-	return '{"id": ' + str(len(patients))+', "patient": {"name":"' + patientRq.name +', "surname": "'+ patientRq.surname+'"}}'
-
+    d = {len(patients) : patientRq.dict()}
+    patients.update(d)
+    return PatientResp(id=len(patients)-1,patient=patientRq.dict())
