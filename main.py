@@ -2,7 +2,8 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from starlette.requests import Request
-from starlette.exceptions import HTTPException
+from fastapi.responses import JSONResponse
+
 
 
 class PatientRq(BaseModel):
@@ -44,9 +45,4 @@ async def get_patient(pk: int):
     if len(patients) - 1 >= pk:
         return patients.get(pk)
     else:
-        raise HTTPException(status_code=418, detail="Page not found")
-
-
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+        return JSONResponse(status_code=404, content={"message": "Page not found"})
