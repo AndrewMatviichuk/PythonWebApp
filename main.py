@@ -26,9 +26,9 @@ def method(request: Request):
 	return {"method": request.method}
 
 
-@app.post("/patient", response_model=PatientResp)
+@app.post("/patient")
 def add_patient(patientRq: PatientRq):
-	d = {len(patients)-1 : patientRq.dict()}
+	d = {len(patients) : patientRq.dict()}
 	patients.update(d)
-	return PatientResp(id=len(patients)-1, patient=patientRq.dict())
+	return '{"id": ' + str(len(patients))+', "patient": {"name":"' + patientRq.name +', "surname": "'+ patientRq.surname+'"}}'
 
