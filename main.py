@@ -45,4 +45,4 @@ async def get_patient(pk: int):
     if len(patients) - 1 >= pk:
         return patients.get(pk)
     else:
-        return JSONResponse(status_code=404, content={"message": "Page not found"})
+        return JSONResponse(status_code=204, content={"message": "Patient not exists"})
