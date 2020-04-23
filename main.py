@@ -58,13 +58,11 @@ async def get_patient(pk: int):
 
 
 @app.post("/login")
-async def login(response: Response, credentials: HTTPBasicCredentials = Depends(security)):
-    if credentials.username == "trudnY" and credentials.password == "PaC13Nt":
-        response = RedirectResponse(url='/welcome')
-        session_token = sha256(bytes(f"{credentials.username}{credentials.password}{app.secret_key}")).hexdigest()
+async def login(username: str, password: str,response: Response):
+    if username == "trudnY" and password == "PaC13Nt":
+        session_token = sha256(bytes(f"{username}{password}{app.secret_key}")).hexdigest()
         response.set_cookie(key="session_token", value=session_token)
-        response.status_code=status.HTTP_307_TEMPORARY_REDIRECT
-        return response
+        return RedirectResponse("/welcome")
     else:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
