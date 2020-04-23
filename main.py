@@ -57,7 +57,7 @@ async def get_patient(pk: int):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@app.post("/login")
+@app.post("/login", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 async def login(response: Response, credentials: HTTPBasicCredentials = Depends(security)):
     if credentials.username == "trudnY" and credentials.password == "PaC13Nt":
         session_token = sha256(bytes(f"{credentials.username}{credentials.password}{app.secret_key}")).hexdigest()
