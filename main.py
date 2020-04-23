@@ -33,7 +33,7 @@ def root():
     return {"message": "Hello World during the coronavirus pandemic!"}
 
 @app.get("/welcome")
-def root():
+def welcome():
     return {"Welcome from London English British School, my friend!"}
 
 
@@ -58,11 +58,12 @@ async def get_patient(pk: int):
 
 
 @app.post("/login")
-def login(response: Response, credentials: HTTPBasicCredentials = Depends(security)):
+async def login(response: Response, credentials: HTTPBasicCredentials = Depends(security)):
     if credentials.username == "trudnY" and credentials.password == "PaC13Nt":
         session_token = sha256(bytes(f"{credentials.username}{credentials.password}{app.secret_key}")).hexdigest()
         response.set_cookie(key="session_token", value=session_token)
-        return RedirectResponse("/welcome")
+        response = RedirectResponse(url='/welcome')
+        return response
     else:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
