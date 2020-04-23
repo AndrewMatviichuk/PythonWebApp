@@ -1,12 +1,13 @@
+from _sha256 import sha256
+
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from typing import Dict
 from pydantic import BaseModel
-from starlette.requests import Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request, Response, status
+from starlette.responses import RedirectResponse
 
 
-
-class PatientRq(BaseModel):
+class Patient(BaseModel):
     name: str
     surename: str
 
@@ -17,7 +18,10 @@ class PatientResp(BaseModel):
 
 
 app = FastAPI()
-patients = dict()
+app.counter: int = 0
+app.storage: Dict[int, Patient] = {}
+app.secret_key = "3586551867030721809738080201689944348810193121742430128090228167"
+
 
 
 @app.get("/")
@@ -29,24 +33,27 @@ def root():
     return {"Welcome from London English British School, my friend!"}
 
 
-@app.get("/method")
-@app.post("/method")
-@app.put("/method")
-@app.delete("/method")
+@app.api_route(path="/method", methods=["GET", "POST", "DELETE", "PUT", "OPTIONS"])
 def method(request: Request):
     return {"method": request.method}
 
 
 @app.post("/patient", response_model=PatientResp)
-def add_patient(patientRq: PatientRq):
-    d = {len(patients): patientRq.dict()}
-    patients.update(d)
-    return PatientResp(id=len(patients) - 1, patient=patientRq.dict())
+def add_patient(patient: Patient):
+    resp = {"id": app.counter, "patient": patient}
+    app.storage[app.counter] = patient
+    app.counter += 1
+    return resp
 
 
 @app.get("/patient/{pk}")
 async def get_patient(pk: int):
-    if len(patients) - 1 >= pk:
-        return patients.get(pk)
-    else:
-        return JSONResponse(status_code=204, content={"message": "Patient not exists"})
+    if pk in app.storage:
+        return app.storage.get(pk)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@app.post("/login")
+def login(username: str, password: str, response: Response):
+    session_token = sha256(bytes(f"{username}{password}{app.secret_key}")).hexdigest()
+    response.set_cookie(key="session_token", value=session_token)
+    return RedirectResponse("/welcome")
