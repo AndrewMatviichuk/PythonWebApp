@@ -1,3 +1,4 @@
+import secrets
 from _sha256 import sha256
 
 import uvicorn
@@ -22,15 +23,16 @@ class PatientResp(BaseModel):
 app = FastAPI()
 app.counter: int = 0
 app.storage: Dict[int, Patient] = {}
+app.tokens = []
 
 security = HTTPBasic()
 app.secret_key = "3586551867030721809738080201689944348810193121742430128090228167"
 
 
-
 @app.get("/")
 def root():
     return {"message": "Hello World during the coronavirus pandemic!"}
+
 
 @app.get("/welcome")
 def welcome():
@@ -57,15 +59,22 @@ async def get_patient(pk: int):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@app.post("/login")
-async def login(username: str, password: str,response: Response):
-    if username == "trudnY" and password == "PaC13Nt":
-        session_token = sha256(bytes(f"{username}{password}{app.secret_key}")).hexdigest()
-        response.set_cookie(key="session_token", value=session_token)
-        return RedirectResponse("/welcome")
-    else:
+def check_login(credentials: HTTPBasicCredentials = Depends(security)):
+    correct_username = secrets.compare_digest(credentials.username, "trudnY")
+    correct_password = secrets.compare_digest(credentials.password, "PaC13Nt")
+    if not (correct_username and correct_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Basic"},
         )
+    return credentials.username + ":" + credentials.password
+
+
+@app.post("/login")
+async def login(login_pass: str = Depends(check_login)):
+    response = RedirectResponse(url='/welcome')
+    secret_token = sha256(bytes(f"{login_pass.split(':',1)[0]}{login_pass.split(':',1)[1]}{app.secret_key}", encoding='utf8')).hexdigest()
+    app.tokens += secret_token
+    response.set_cookie(key="session_token",value=secret_token)
+    return response
