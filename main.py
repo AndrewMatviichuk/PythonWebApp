@@ -72,7 +72,7 @@ async def get_patients(auth: str = Depends(check_login)):
     resp = {}
     for x in range(0, app.counter):
         resp[app.storage.get(x).id] = {'name': app.storage.get(x).name, 'surname': app.storage.get(x).surname}
-    return resp
+    return Response(resp, status_code=status.HTTP_300_MULTIPLE_CHOICES)
 
 
 @app.get("/patient/{pk}")
@@ -85,7 +85,8 @@ async def get_patient(pk: int):
 @app.delete("/patient/{pk}")
 async def get_patient(pk: int):
     if pk in app.storage:
-        return app.storage.pop(pk, None)
+        app.storage.pop(pk, None)
+        return Response(status_code=status.HTTP_300_MULTIPLE_CHOICES)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
