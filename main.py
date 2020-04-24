@@ -82,6 +82,13 @@ async def get_patient(pk: int):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@app.delete("/patient/{pk}")
+async def get_patient(pk: int):
+    if pk in app.storage:
+        return app.storage.pop(pk, None)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 def check_login(credentials: HTTPBasicCredentials = Depends(security)):
     correct_username = secrets.compare_digest(credentials.username, "trudnY")
     correct_password = secrets.compare_digest(credentials.password, "PaC13Nt")
