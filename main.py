@@ -72,7 +72,9 @@ async def get_patients(auth: str = Depends(check_login)):
     resp = {}
     for x in app.storage.values():
         resp[x.id] = {'name': x.name, 'surname': x.surname}
-    return JSONResponse(resp, status_code=status.HTTP_300_MULTIPLE_CHOICES)
+    if not resp:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return JSONResponse(resp)
 
 
 @app.get("/patient/{pk}")
