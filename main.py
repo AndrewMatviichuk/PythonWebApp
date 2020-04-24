@@ -7,7 +7,7 @@ from typing import Dict
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 from fastapi import FastAPI, Request, Response, status, Depends, HTTPException
-from starlette.responses import RedirectResponse
+from starlette.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 app = FastAPI()
@@ -70,9 +70,9 @@ async def add_patient(patient: Patient, auth: str = Depends(check_login)):
 @app.get("/patient")
 async def get_patients(auth: str = Depends(check_login)):
     resp = {}
-    for x in range(0, app.counter):
-        resp[app.storage.get(x).id] = {'name': app.storage.get(x).name, 'surname': app.storage.get(x).surname}
-    return Response(resp, status_code=status.HTTP_300_MULTIPLE_CHOICES)
+    for x in app.storage.values():
+        resp[x.id] = {'name': x.name, 'surname': x.surname}
+    return JSONResponse(resp, status_code=status.HTTP_300_MULTIPLE_CHOICES)
 
 
 @app.get("/patient/{pk}")
@@ -85,6 +85,7 @@ async def get_patient(pk: int):
 @app.delete("/patient/{pk}")
 async def get_patient(pk: int):
     if pk in app.storage:
+        app.counter -= 1
         app.storage.pop(pk, None)
         return Response(status_code=status.HTTP_300_MULTIPLE_CHOICES)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
