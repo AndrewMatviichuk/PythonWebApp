@@ -10,20 +10,21 @@ from fastapi import FastAPI, Request, Response, status, Depends, HTTPException
 from starlette.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+app = FastAPI()
+app.counter: int = 0
+
 
 class Patient(BaseModel):
     name: str
-    surename: str
+    surname: str
+    id: str = 0
 
 
-class PatientResp(BaseModel):
-    id: int
-    patient: dict
+class PatientsResp(BaseModel):
+    response: dict
 
 
-app = FastAPI()
 templates = Jinja2Templates(directory="templates")
-app.counter: int = 0
 app.storage: Dict[int, Patient] = {}
 app.tokens = []
 
@@ -53,19 +54,24 @@ def welcome(request: Request, auth: str = Depends(check_login)):
     return templates.TemplateResponse("greeting.html", {"request": request, "user": auth.split(':', 1)[0]})
 
 
-"""auth.split(':', 1)[0]"""
-
-
 @app.api_route(path="/method", methods=["GET", "POST", "DELETE", "PUT", "OPTIONS"])
 def method(request: Request):
     return {"method": request.method}
 
 
-@app.post("/patient", response_model=PatientResp)
-def add_patient(patient: Patient, auth: str = Depends(check_login)):
-    resp = {"id": app.counter, "patient": patient}
+@app.post("/patient")
+async def add_patient(patient: Patient, auth: str = Depends(check_login)):
+    patient.id = "id_" + str(app.counter)
     app.storage[app.counter] = patient
     app.counter += 1
+    return RedirectResponse("/patient/" + str(app.counter - 1))
+
+
+@app.get("/patient")
+async def get_patients(auth: str = Depends(check_login)):
+    resp = {}
+    for x in range(0, app.counter):
+        resp[app.storage.get(x).id] = {'name': app.storage.get(x).name, 'surname': app.storage.get(x).surname}
     return resp
 
 
