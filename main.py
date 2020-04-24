@@ -78,14 +78,14 @@ async def get_patients(auth: str = Depends(check_login)):
 
 
 @app.get("/patient/{pk}")
-async def get_patient(pk: int):
+async def get_patient(pk: int,auth: str = Depends(check_login)):
     if pk in app.storage:
         return app.storage.get(pk)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.delete("/patient/{pk}")
-async def get_patient(pk: int):
+async def get_patient(pk: int,auth: str = Depends(check_login)):
     if pk in app.storage:
         app.counter -= 1
         app.storage.pop(pk, None)
