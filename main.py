@@ -44,8 +44,20 @@ def method(request: Request):
     return {"method": request.method}
 
 
+def check_login(credentials: HTTPBasicCredentials = Depends(security)):
+    correct_username = secrets.compare_digest(credentials.username, "trudnY")
+    correct_password = secrets.compare_digest(credentials.password, "PaC13Nt")
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username + ":" + credentials.password
+
+
 @app.post("/patient", response_model=PatientResp)
-def add_patient(patient: Patient):
+def add_patient(patient: Patient, login_pass: str = Depends(check_login)):
     resp = {"id": app.counter, "patient": patient}
     app.storage[app.counter] = patient
     app.counter += 1
@@ -74,7 +86,15 @@ def check_login(credentials: HTTPBasicCredentials = Depends(security)):
 @app.post("/login")
 async def login(login_pass: str = Depends(check_login)):
     response = RedirectResponse(url='/welcome')
-    secret_token = sha256(bytes(f"{login_pass.split(':',1)[0]}{login_pass.split(':',1)[1]}{app.secret_key}", encoding='utf8')).hexdigest()
+    secret_token = sha256(bytes(f"{login_pass.split(':', 1)[0]}{login_pass.split(':', 1)[1]}{app.secret_key}",
+                                encoding='utf8')).hexdigest()
     app.tokens += secret_token
-    response.set_cookie(key="session_token",value=secret_token)
+    response.set_cookie(key="session_token", value=secret_token)
+    return response
+
+
+@app.post("/logout")
+def logout():
+    response = RedirectResponse(url="/")
+    response.delete_cookie("session_token")
     return response
