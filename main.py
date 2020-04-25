@@ -79,10 +79,10 @@ def get_patients(response: Response, auth: str = Depends(check_login)):
 
 
 @app.get("/patient/{pk}")
-def get_patient(pk: int, auth: str = Depends(check_login)):
+def get_patient(pk: int, response: Response, auth: str = Depends(check_login)):
     if pk in app.storage:
         return app.storage.get(pk)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    response.status_code = status.HTTP_204_NO_CONTENT
 
 
 @app.delete("/patient/{pk}")
@@ -100,7 +100,6 @@ async def login(response: Response, login_pass: str = Depends(check_login)):
                                 encoding='utf8')).hexdigest()
     app.tokens += secret_token
     response.set_cookie(key="session_token", value=secret_token)
-    return response
 
 
 @app.post("/logout")
@@ -108,4 +107,3 @@ def logout(response: Response, auth: str = Depends(check_login)):
     response.status_code = status.HTTP_302_FOUND
     response.headers["Location"] = "/"
     response.delete_cookie("session_token")
-    return response
