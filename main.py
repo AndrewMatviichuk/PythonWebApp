@@ -60,37 +60,36 @@ def method(request: Request):
 
 
 @app.post("/patient")
-async def add_patient(patient: Patient, auth: str = Depends(check_login)):
+async def add_patient(response: Response, patient: Patient, auth: str = Depends(check_login)):
     patient.id = "id_" + str(app.counter)
     app.storage[app.counter] = patient
     app.counter += 1
-    return RedirectResponse("/patient/" + str(app.counter - 1))
+    response.status_code = status.HTTP_302_FOUND
+    response.headers["Location"] = f"/patient/{app.counter - 1}"
 
 
 @app.get("/patient")
-async def get_patients(auth: str = Depends(check_login)):
+def get_patients(response: Response, auth: str = Depends(check_login)):
     resp = {}
     for x in app.storage.values():
         resp[x.id] = {'name': x.name, 'surname': x.surname}
-    if not resp:
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-    return JSONResponse(resp)
+    if resp:
+        return JSONResponse(resp)
+    response.status_code = status.HTTP_204_NO_CONTENT
 
 
 @app.get("/patient/{pk}")
-async def get_patient(pk: int,auth: str = Depends(check_login)):
+def get_patient(pk: int, auth: str = Depends(check_login)):
     if pk in app.storage:
         return app.storage.get(pk)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.delete("/patient/{pk}")
-async def get_patient(pk: int,auth: str = Depends(check_login)):
+def get_patient(pk: int, response: Response, auth: str = Depends(check_login)):
     if pk in app.storage:
-        app.counter -= 1
         app.storage.pop(pk, None)
-        return Response(status_code=status.HTTP_300_MULTIPLE_CHOICES)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+        response.status_code = status.HTTP_204_NO_CONTENT
 
 
 def check_login(credentials: HTTPBasicCredentials = Depends(security)):
@@ -106,8 +105,9 @@ def check_login(credentials: HTTPBasicCredentials = Depends(security)):
 
 
 @app.post("/login")
-async def login(login_pass: str = Depends(check_login)):
-    response = RedirectResponse(url='/welcome')
+async def login(response: Response, login_pass: str = Depends(check_login)):
+    response.headers["Location"] = "/welcome"
+    response.status_code = status.HTTP_302_FOUND
     secret_token = sha256(bytes(f"{login_pass.split(':', 1)[0]}{login_pass.split(':', 1)[1]}{app.secret_key}",
                                 encoding='utf8')).hexdigest()
     app.tokens += secret_token
@@ -116,7 +116,8 @@ async def login(login_pass: str = Depends(check_login)):
 
 
 @app.post("/logout")
-def logout(auth: str = Depends(check_login)):
-    response = RedirectResponse(url="/")
+def logout(response: Response, auth: str = Depends(check_login)):
+    response.status_code = status.HTTP_302_FOUND
+    response.headers["Location"] = "/"
     response.delete_cookie("session_token")
     return response
