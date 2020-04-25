@@ -47,7 +47,7 @@ def welcome(request: Request, response: Response, session_token: str = Depends(c
         response.status_code = status.HTTP_401_UNAUTHORIZED
         return MESSAGE_UNAUTHORIZED
     username = app.sessions[session_token]
-    return templates.TemplateResponse("welcome.html", {"request": request, "user": username})
+    return templates.TemplateResponse("greeting.html", {"request": request, "user": username})
 
 def login_check_cred(credentials: HTTPBasicCredentials = Depends(security)):
     correct = False
