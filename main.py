@@ -92,18 +92,6 @@ def get_patient(pk: int, response: Response, auth: str = Depends(check_login)):
         response.status_code = status.HTTP_204_NO_CONTENT
 
 
-def check_login(credentials: HTTPBasicCredentials = Depends(security)):
-    correct_username = secrets.compare_digest(credentials.username, "trudnY")
-    correct_password = secrets.compare_digest(credentials.password, "PaC13Nt")
-    if not (correct_username and correct_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    return credentials.username + ":" + credentials.password
-
-
 @app.post("/login")
 async def login(response: Response, login_pass: str = Depends(check_login)):
     response.headers["Location"] = "/welcome"
