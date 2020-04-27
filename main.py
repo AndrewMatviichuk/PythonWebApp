@@ -1,8 +1,7 @@
 import secrets
+import sqlite3
 from _sha256 import sha256
-
 import uvicorn
-from typing import Dict
 
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
@@ -12,12 +11,12 @@ from fastapi.templating import Jinja2Templates
 
 app = FastAPI()
 app.counter: int = 0
-templates = Jinja2Templates(directory="templates")
+app.templates = Jinja2Templates(directory="templates")
 app.cookies = {}
-security = HTTPBasic()
+app.security = HTTPBasic()
 app.secret_key = "3586551867030721809738080201689944348810193121742430128090228167"
 app.storage = {}
-
+app.db_connection = None
 
 class Patient(BaseModel):
     name: str
@@ -31,11 +30,14 @@ class PatientsResp(BaseModel):
 
 def check_session(session_token: str = Cookie(None)):
     if session_token not in app.cookies:
-        session_token = None
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="UNAUTHORIZED",
+        )
     return session_token
 
 
-def create_session(credentials: HTTPBasicCredentials = Depends(security)):
+def create_session(credentials: HTTPBasicCredentials = Depends(app.security)):
     correct_username = secrets.compare_digest(credentials.username, "trudnY")
     correct_password = secrets.compare_digest(credentials.password, "PaC13Nt")
     if not (correct_username and correct_password):
@@ -50,8 +52,18 @@ def create_session(credentials: HTTPBasicCredentials = Depends(security)):
     return secret_token
 
 
+@app.on_event("startup")
+async def startup():
+    app.db_connection = sqlite3.connect('chinook.db')
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    app.db_connection.close()
+
+
 @app.get("/")
-def root():
+async def root():
     return {"message": "Hello World during the coronavirus pandemic!"}
 
 
@@ -63,34 +75,25 @@ async def login(response: Response, new_session: str = Depends(create_session)):
 
 
 @app.post("/logout")
-def logout(response: Response, session: str = Depends(check_session)):
-    if session is None:
-        response.status_code = status.HTTP_401_UNAUTHORIZED
-        return "UNAUTHORIZED"
+async def logout(response: Response, session: str = Depends(check_session)):
     response.status_code = status.HTTP_302_FOUND
     response.headers["Location"] = "/"
     app.cookies.pop(session)
 
 
 @app.get("/welcome")
-def welcome(request: Request, response: Response, session: str = Depends(check_session)):
-    if session is None:
-        response.status_code = status.HTTP_401_UNAUTHORIZED
-        return "UNAUTHORIZED"
-    return templates.TemplateResponse("greeting.html", {"request": request, "user": app.cookies[session]})
+async def welcome(request: Request, response: Response, session: str = Depends(check_session)):
+        return app.templates.TemplateResponse("greeting.html", {"request": request, "user": app.cookies[session]})
 
 
 
 @app.api_route(path="/method", methods=["GET", "POST", "DELETE", "PUT", "OPTIONS"])
-def method(request: Request):
+async def method(request: Request):
     return {"method": request.method}
 
 
 @app.post("/patient")
 async def add_patient(response: Response, patient: Patient, session: str = Depends(check_session)):
-    if session is None:
-        response.status_code = status.HTTP_401_UNAUTHORIZED
-        return "UNAUTHORIZED"
     patient.id = "id_" + str(app.counter)
     app.storage[app.counter] = patient
     response.status_code = status.HTTP_302_FOUND
@@ -99,10 +102,7 @@ async def add_patient(response: Response, patient: Patient, session: str = Depen
 
 
 @app.get("/patient")
-def get_patients(response: Response, session: str = Depends(check_session)):
-    if session is None:
-        response.status_code = status.HTTP_401_UNAUTHORIZED
-        return "UNAUTHORIZED"
+async def get_patients(response: Response, session: str = Depends(check_session)):
     resp = {}
     for x in app.storage.values():
         resp[x.id] = {'name': x.name, 'surname': x.surname}
@@ -112,20 +112,23 @@ def get_patients(response: Response, session: str = Depends(check_session)):
 
 
 @app.get("/patient/{pk}")
-def get_patient(pk: int, response: Response, session: str = Depends(check_session)):
-    if session is None:
-        response.status_code = status.HTTP_401_UNAUTHORIZED
-        return "UNAUTHORIZED"
+async def get_patient(pk: int, response: Response, session: str = Depends(check_session)):
     if pk in app.storage:
         return app.storage.get(pk)
     response.status_code = status.HTTP_204_NO_CONTENT
 
 
 @app.delete("/patient/{pk}")
-def get_patient(pk: int, response: Response, session: str = Depends(check_session)):
-    if session is None:
-        response.status_code = status.HTTP_401_UNAUTHORIZED
-        return "UNAUTHORIZED"
+async def get_patient(pk: int, response: Response, session: str = Depends(check_session)):
     if pk in app.storage:
         app.storage.pop(pk, None)
         response.status_code = status.HTTP_204_NO_CONTENT
+
+
+@app.get("/tracks")
+async def get_tracks(page: int = 0, per_page: int = 10):
+    app.db_connection.row_factory = sqlite3.Row
+    data = app.db_connection.execute(
+        "SELECT TrackId,Name,AlbumId,MediaTypeId,GenreId,Composer,Milliseconds,"
+        "Bytes,UnitPrice FROM tracks LIMIT ? OFFSET ?", (per_page,page,)).fetchall()
+    return data
