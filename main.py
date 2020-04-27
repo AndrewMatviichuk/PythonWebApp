@@ -126,9 +126,8 @@ async def get_patient(pk: int, response: Response, session: str = Depends(check_
 
 
 @app.get("/tracks")
-async def get_track(page: int = 0, per_page: int = 10):
+async def get_tracks(page: int = 0, per_page: int = 10):
     app.db_connection.row_factory = sqlite3.Row
     data = app.db_connection.execute(
-        "SELECT TrackId,Name,AlbumId,MediaTypeId,GenreId,Composer,Milliseconds,"
-        "Bytes,UnitPrice FROM tracks LIMIT ? OFFSET ? ORDER BY TrackId ASC", (per_page,page-1,)).fetchall()
+        "SELECT * FROM tracks ORDER BY TrackId LIMIT ? OFFSET ?", (per_page, page*per_page,)).fetchall()
     return data
