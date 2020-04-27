@@ -130,5 +130,5 @@ async def get_track(page: int = 0, per_page: int = 10):
     app.db_connection.row_factory = sqlite3.Row
     data = app.db_connection.execute(
         "SELECT TrackId,Name,AlbumId,MediaTypeId,GenreId,Composer,Milliseconds,"
-        "Bytes,UnitPrice FROM tracks LIMIT ? OFFSET ?", (per_page,page-1,)).fetchall()
+        "Bytes,UnitPrice FROM tracks LIMIT ? OFFSET ? ORDER BY TrackId ASC", (per_page,page-1,)).fetchall()
     return data
