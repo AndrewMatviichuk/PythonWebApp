@@ -148,9 +148,10 @@ async def get_tracks(composer_name: str = ""):
 
 @app.get("/tracks/composers")
 async def get_tracks(composer_name: str):
-    app.db_connection.row_factory = lambda cursor, x: x[0]
-    data = app.db_connection.execute(
-        "SELECT Name FROM tracks WHERE Composer = ? ORDER BY Name", (composer_name,)).fetchall()
+    app.db_connection.row_factory = lambda cur, x: x[0]
+    cursor = app.db_connection.execute(
+        "SELECT Name FROM tracks WHERE Composer = ? ORDER BY Name", (composer_name, ))
+    data = cursor.fetchall()
     if not data:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
