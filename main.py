@@ -186,13 +186,13 @@ async def get_artist(album_id: int):
 
 
 class Customer(BaseModel):
-    company: Optional[str] = None
-    address: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    country: Optional[str] = None
-    postalcode: Optional[str] = None
-    fax: Optional[str] = None
+    company: str = None
+    address: str = None
+    city: str = None
+    state: str = None
+    country: str = None
+    postalcode: str = None
+    fax: str = None
 
 
 @app.put("/customers/{customer_id}")
