@@ -183,3 +183,32 @@ async def get_artist(album_id: int):
             detail={"error": f"AlbumId: {album_id} not found!"},
         )
     return data
+
+
+class Customer(BaseModel):
+    company: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
+    postalcode: Optional[str] = None
+    fax: Optional[str] = None
+
+
+@app.put("/customers/{customer_id}")
+async def update_customer(customer_id: int, customer: Customer):
+    app.db_connection.row_factory = sqlite3.Row
+    data = app.db_connection.execute(
+        "SELECT * FROM customers WHERE CustomerId = ?", (customer_id,)).fetchall()
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": f"CustomerId: {customer_id} not found!"},
+        )
+    for field in customer:
+        if field[1]:
+            app.db_connection.execute(
+                f"UPDATE customers SET {field[0]} = \"{field[1]}\" WHERE CustomerId = {customer_id}"
+            )
+    app.db_connection.commit()
+    return app.db_connection.execute("SELECT * FROM customers WHERE CustomerId = ?", (customer_id,)).fetchall()
