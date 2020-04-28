@@ -216,7 +216,16 @@ async def update_customer(customer_id: int, customer: Customer):
 
 @app.get("/sales")
 async def get_sales(category: str):
-    if category == "genres":
+    if category == "customers":
+        app.db_connection.row_factory = sqlite3.Row
+        data = app.db_connection.execute(
+            "SELECT customers.CustomerId,customers.Email,customers.Phone, "
+            "ROUND(SUM(invoices.Total),2) Sum FROM invoices "
+            "INNER JOIN customers ON invoices.CustomerId = customers.CustomerId "
+            "GROUP BY customers.CustomerId,customers.Email,customers.Phone "
+            "ORDER BY Sum DESC, customers.CustomerId").fetchall()
+        return data
+    elif category == "genres":
         app.db_connection.row_factory = sqlite3.Row
         data = app.db_connection.execute(
             "SELECT genres.Name,SUM(invoice_items.Quantity) AS Sum FROM genres "
