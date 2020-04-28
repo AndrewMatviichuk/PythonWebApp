@@ -211,7 +211,7 @@ async def update_customer(customer_id: int, customer: Customer):
                 f"UPDATE customers SET {field[0]} = \"{field[1]}\" WHERE CustomerId = {customer_id}"
             )
     app.db_connection.commit()
-    return app.db_connection.execute("SELECT * FROM customers WHERE CustomerId = ?", (customer_id,)).fetchall()
+    return app.db_connection.execute("SELECT * FROM customers WHERE CustomerId = ?", (customer_id,)).fetchall()[0]
 
 
 @app.get("/sales")
