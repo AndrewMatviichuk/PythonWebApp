@@ -144,3 +144,42 @@ async def get_tracks(composer_name: str):
             detail={"error": "Not found!"},
         )
     return data
+
+
+class Album(BaseModel):
+    title: str
+    artist_id: int
+
+
+@app.post("/albums")
+async def add_album(album: Album, response: Response):
+    artist = app.db_connection.execute(
+        "SELECT Name FROM artists WHERE ArtistId = ?", (album.artist_id,)).fetchall()
+    if not artist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": f"ArtistId: {album.artist_id} not found!"},
+        )
+    cursor = app.db_connection.execute(
+        f"INSERT INTO albums (Title,ArtistId) VALUES {album.title, album.artist_id}",
+    )
+    app.db_connection.commit()
+    response.status_code = status.HTTP_201_CREATED
+    return {
+        "AlbumId": cursor.lastrowid,
+        "Title": album.title,
+        "ArtistId": album.artist_id
+    }
+
+
+@app.get("/albums/{album_id}")
+async def get_artist(album_id: int):
+    app.db_connection.row_factory = sqlite3.Row
+    data = app.db_connection.execute(
+        "SELECT * FROM albums WHERE AlbumId = ?", (album_id, )).fetchall()
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": f"AlbumId: {album_id} not found!"},
+        )
+    return data
