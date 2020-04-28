@@ -212,3 +212,21 @@ async def update_customer(customer_id: int, customer: Customer):
             )
     app.db_connection.commit()
     return app.db_connection.execute("SELECT * FROM customers WHERE CustomerId = ?", (customer_id,)).fetchall()
+
+
+@app.get("/sales")
+async def get_sales(category: str):
+    if category == "genres":
+        app.db_connection.row_factory = sqlite3.Row
+        data = app.db_connection.execute(
+            "SELECT genres.Name,SUM(invoice_items.Quantity) AS Sum FROM genres "
+            "INNER JOIN tracks ON genres.GenreId = tracks.GenreId "
+            "INNER JOIN invoice_items ON tracks.TrackId = invoice_items.TrackId "
+            "GROUP BY genres.Name "
+            "ORDER BY Sum DESC,genres.Name").fetchall()
+        return data
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": f"Category: {category} not found!"},
+        )
